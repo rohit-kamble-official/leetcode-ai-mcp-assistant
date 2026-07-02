@@ -1,0 +1,140 @@
+version: "3.9"
+
+services:
+
+  frontend:
+    container_name: leetcode-mcp-frontend
+
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      backend:
+        condition: service_started
+
+    restart: unless-stopped
+
+    networks:
+      - app-network
+
+  backend:
+    container_name: leetcode-mcp-backend
+
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    env_file:
+      - ./backend/.env
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+    networks:
+      - app-network
+
+  migrate:
+    container_name: leetcode-mcp-migrate
+
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    command: node migrations/run.js
+
+    env_file:
+      - ./backend/.env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    restart: "no"
+
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16-alpine
+
+    container_name: leetcode-mcp-postgres
+
+    environment:
+      POSTGRES_DB: leetcode_mcp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Rohit@2020
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U postgres -d leetcode_mcp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    restart: unless-stopped
+
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: leetcode-mcp-redis
+
+    command: redis-server --appendonly yes
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge
