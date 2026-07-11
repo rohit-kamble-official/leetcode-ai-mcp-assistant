@@ -20,7 +20,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const MAX_TOKENS = 2048;
 
 // System prompt that sets the AI's persona
@@ -191,21 +191,25 @@ export const aiService = {
  */
 async function callAI(userPrompt) {
   try {
+    console.log("GEMINI_MODEL =", process.env.GEMINI_MODEL);
+
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: `${SYSTEM_PROMPT}\n\n${userPrompt}`,
     });
 
+    console.log("Gemini response:", response);
+
     return response.text;
   } catch (err) {
+    console.error("Gemini Error:", err);
+
     logger.error("AI service call failed", {
-      error: err.message,
+      message: err.message,
+      error: JSON.stringify(err, null, 2),
     });
 
-    throw new AppError(
-      "AI service temporarily unavailable",
-      503
-    );
+    throw new AppError("AI service temporarily unavailable", 503);
   }
 }
 
