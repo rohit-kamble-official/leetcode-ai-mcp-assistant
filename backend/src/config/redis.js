@@ -14,9 +14,11 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT) || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
-  // Retry connection with exponential backoff — prevents hammering on restart
+
+  tls: process.env.NODE_ENV === "production" ? {} : undefined,
+
   retryStrategy: (times) => Math.min(times * 50, 2000),
-  lazyConnect: true, // Don't connect until connectRedis() is called
+  lazyConnect: true,
   maxRetriesPerRequest: 3,
 });
 
