@@ -191,14 +191,10 @@ export const aiService = {
  */
 async function callAI(userPrompt) {
   try {
-    console.log("GEMINI_MODEL =", process.env.GEMINI_MODEL);
-
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: `${SYSTEM_PROMPT}\n\n${userPrompt}`,
     });
-
-    console.log("Gemini response:", response);
 
     return response.text;
   } catch (err) {
