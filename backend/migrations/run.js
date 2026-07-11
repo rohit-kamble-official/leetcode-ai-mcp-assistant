@@ -24,6 +24,9 @@ const pool = new pg.Pool({
   database: process.env.DB_NAME || 'leetcode_mcp',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 const SCHEMA_SQL = `
