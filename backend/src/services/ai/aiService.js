@@ -12,15 +12,15 @@
  * teaching a student — clear, educational, and actionable.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from "@google/genai";
 import logger from '../../config/logger.js';
 import { AppError } from '../../utils/AppError.js';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const MAX_TOKENS = 2048;
 
 // System prompt that sets the AI's persona
@@ -191,25 +191,21 @@ export const aiService = {
  */
 async function callAI(userPrompt) {
   try {
-    const response = await anthropic.messages.create({
+    const response = await ai.models.generateContent({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+      contents: `${SYSTEM_PROMPT}\n\n${userPrompt}`,
     });
 
-    return response.content[0].text;
+    return response.text;
   } catch (err) {
-    logger.error('AI service call failed', { error: err.message });
+    logger.error("AI service call failed", {
+      error: err.message,
+    });
 
-    if (err.status === 401) {
-      throw new AppError('AI service authentication failed', 500);
-    }
-    if (err.status === 429) {
-      throw new AppError('AI service rate limit exceeded. Please try again later.', 429);
-    }
-
-    throw new AppError('AI service temporarily unavailable', 503);
+    throw new AppError(
+      "AI service temporarily unavailable",
+      503
+    );
   }
 }
 
